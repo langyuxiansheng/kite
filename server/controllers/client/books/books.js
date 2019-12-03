@@ -11,7 +11,6 @@ const { TimeNow, TimeDistance } = require('../../../utils/time')
 const {
   statusList: { reviewSuccess, freeReview, pendingReview, reviewFail, deletes },
   articleType,
-  userMessageType,
   userMessageAction,
   virtualAction,
   virtualType,
@@ -21,7 +20,8 @@ const {
   isFreeText,
   productType,
   trialRead,
-  productTypeInfo
+  productTypeInfo,
+  modelType
 } = require('../../../utils/constant')
 
 const userVirtual = require('../../../common/userVirtual')
@@ -103,9 +103,9 @@ class Books {
    * 新建小书post提交
    * @param   {object} ctx 上下文对象
    */
-  static async createBooks (ctx) {
-    let reqData = ctx.request.body
-    let { user = '' } = ctx.request
+  static async createBooks (req, res, next) {
+    let reqData = req.body
+    let { user = '' } = req
     try {
       if (!reqData.title) {
         throw new ErrorMessage('请输入小书名字')
@@ -187,9 +187,7 @@ class Books {
       if (~reqData.tag_ids.indexOf(config.ARTICLE_TAG.dfOfficialExclusive)) {
         if (!~user.user_role_ids.indexOf(config.USER_ROLE.dfManagementTeam)) {
           throw new ErrorMessage(
-            `${oneArticleTag.name}只有${
-              website.website_name
-            }管理团队才能发布小书`
+            `${oneArticleTag.name}只有${website.website_name}管理团队才能发布小书`
           )
         }
       }
@@ -236,12 +234,12 @@ class Books {
         action: virtualAction.create
       })
 
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'success',
         message: '创建成功'
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -253,9 +251,9 @@ class Books {
    * ajax 查询一篇用户自己的小书
    * @param   {object} ctx 上下文对象
    */
-  static async getUserBooksInfo (ctx) {
-    let { books_id } = ctx.query
-    let { user = '' } = ctx.request
+  static async getUserBooksInfo (req, res, next) {
+    let { books_id } = req.query
+    let { user = '' } = req
     try {
       let books = await models.books.findOne({
         where: {
@@ -266,13 +264,13 @@ class Books {
 
       if (books) {
         if (books) {
-          resClientJson(ctx, {
+          resClientJson(res, {
             state: 'success',
             message: '获取小书成功',
             data: { books }
           })
         } else {
-          resClientJson(ctx, {
+          resClientJson(res, {
             state: 'error',
             message: '获取小书失败'
           })
@@ -281,7 +279,7 @@ class Books {
         throw new ErrorMessage('获取小书失败')
       }
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -293,9 +291,9 @@ class Books {
    * 更新小书
    * @param   {object} ctx 上下文对象
    */
-  static async updateBooks (ctx) {
-    let reqData = ctx.request.body
-    let { user = '' } = ctx.request
+  static async updateBooks (req, res, next) {
+    let reqData = req.body
+    let { user = '' } = req
     try {
       if (!reqData.title) {
         throw new ErrorMessage('请输入小书名字')
@@ -365,9 +363,7 @@ class Books {
       if (~reqData.tag_ids.indexOf(config.ARTICLE_TAG.dfOfficialExclusive)) {
         if (!~user.user_role_ids.indexOf(config.USER_ROLE.dfManagementTeam)) {
           throw new ErrorMessage(
-            `${oneArticleTag.name}只有${
-              website.website_name
-            }管理团队才能发布小书`
+            `${oneArticleTag.name}只有${website.website_name}管理团队才能发布小书`
           )
         }
       }
@@ -412,12 +408,12 @@ class Books {
         }
       )
 
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'success',
         message: '修改小书成功'
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -430,9 +426,9 @@ class Books {
    * @param   {object} ctx 上下文对象
    */
 
-  static async deleteBooks (ctx) {
-    const resData = ctx.request.body
-    let { user = '' } = ctx.request
+  static async deleteBooks (req, res, next) {
+    const resData = req.body
+    let { user = '' } = req
     try {
       await models.books.update(
         {
@@ -446,12 +442,12 @@ class Books {
         }
       )
 
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'success',
         message: '删除小书成功'
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -461,12 +457,12 @@ class Books {
 
   // 首页的公开的小书列表
 
-  static async getBooksList (ctx) {
-    let page = ctx.query.page || 1
-    let pageSize = ctx.query.pageSize || 24
-    let sort = ctx.query.sort
-    let tagId = ctx.query.tagId
-    let columnEnName = ctx.query.columnEnName
+  static async getBooksList (req, res, next) {
+    let page = req.query.page || 1
+    let pageSize = req.query.pageSize || 24
+    let sort = req.query.sort
+    let tagId = req.query.tagId
+    let columnEnName = req.query.columnEnName
     let tagIdArr = []
     let whereParams = {
       is_public: true,
@@ -508,7 +504,7 @@ class Books {
     }
 
     !sort && (orderParams = [['create_date', 'DESC']])
-    sort === 'hot' && (orderParams = [['like_count', 'DESC']])
+    sort === 'hot' && (orderParams = [['read_count', 'DESC']])
 
     tagIdArr.length > 0 &&
       (whereParams['tag_ids'] = {
@@ -555,8 +551,12 @@ class Books {
 
         rows[i].setDataValue(
           'collectUserIds',
-          await models.collect_books.findAll({
-            where: { books_id: rows[i].books_id, is_like: true }
+          await models.collect.findAll({
+            where: {
+              associate_id: rows[i].books_id,
+              is_associate: true,
+              type: modelType.books
+            }
           })
         )
 
@@ -578,7 +578,7 @@ class Books {
         )
       }
 
-      await resClientJson(ctx, {
+      await resClientJson(res, {
         state: 'success',
         message: 'success',
         data: {
@@ -589,7 +589,7 @@ class Books {
         }
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -601,9 +601,9 @@ class Books {
    * ajax 查询一篇小书信息
    * @param   {object} ctx 上下文对象
    */
-  static async getBooksInfo (ctx) {
-    let { books_id, type } = ctx.query
-    let { user = '', islogin } = ctx.request
+  static async getBooksInfo (req, res, next) {
+    let { books_id, type } = req.query
+    let { user = '', islogin } = req
 
     try {
       let books = await models.books.findOne({
@@ -624,8 +624,12 @@ class Books {
 
         books.setDataValue(
           'collectUserIds',
-          await models.collect_books.findAll({
-            where: { books_id: books.books_id, is_like: true }
+          await models.collect.findAll({
+            where: {
+              associate_id: books.books_id,
+              is_associate: true,
+              type: modelType.books
+            }
           })
         )
 
@@ -673,13 +677,13 @@ class Books {
         }
 
         if (books) {
-          resClientJson(ctx, {
+          resClientJson(res, {
             state: 'success',
             message: '获取小书成功',
             data: { books }
           })
         } else {
-          resClientJson(ctx, {
+          resClientJson(res, {
             state: 'error',
             message: '获取小书失败',
             data: { books: {} }
@@ -689,7 +693,7 @@ class Books {
         throw new ErrorMessage('获取小书失败')
       }
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -701,9 +705,9 @@ class Books {
    * ajax 查询一篇小书所有的章节
    * @param   {object} ctx 上下文对象
    */
-  static async getBooksBookAll (ctx) {
-    let { books_id } = ctx.query
-    let { user = '', islogin } = ctx.request
+  static async getBooksBookAll (req, res, next) {
+    let { books_id } = req.query
+    let { user = '', islogin } = req
 
     try {
       let books = await models.books.findOne({
@@ -734,8 +738,11 @@ class Books {
           ]
         })
 
+        console.log('islogin', islogin)
+
         for (let i in allBook) {
           if (islogin) {
+            console.log(11111111111111111111111)
             // 获取商品信息
             const productInfo = await models.order.findOne({
               where: {
@@ -766,19 +773,19 @@ class Books {
           )
         }
 
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'success',
           message: '获取小书所有章节成功',
           data: { list: allBook }
         })
       } else {
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'error',
           message: '获取小书章节失败，小书不存在'
         })
       }
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -788,10 +795,10 @@ class Books {
 
   // 获取用户收藏的小书列表
 
-  static async getCollectBooksList (ctx) {
-    let page = ctx.query.page || 1
-    let pageSize = ctx.query.pageSize || 24
-    let uid = ctx.query.uid || ''
+  static async getCollectBooksList (req, res, next) {
+    let page = req.query.page || 1
+    let pageSize = req.query.pageSize || 24
+    let uid = req.query.uid || ''
     let whereParams = {
       is_public: true,
       status: {
@@ -800,21 +807,21 @@ class Books {
     }
 
     try {
-      let { count, rows } = await models.collect_books.findAndCountAll({
-        where: { is_like: true, uid }, // 为空，获取全部，也可以自己添加条件
+      let { count, rows } = await models.collect.findAndCountAll({
+        where: { is_associate: true, uid, type: modelType.books }, // 为空，获取全部，也可以自己添加条件
         offset: (page - 1) * pageSize, // 开始的数据索引，比如当page=2 时offset=10 ，而pagesize我们定义为10，则现在为索引为10，也就是从第11条开始返回数据条目
         limit: pageSize // 每页限制返回的数据条数
         // order: orderParams
       })
       for (let i in rows) {
         const oneBooks = await models.books.findOne({
-          where: { books_id: rows[i].books_id, ...whereParams }
+          where: { books_id: rows[i].associate_id, ...whereParams }
         })
 
         rows[i].setDataValue(
           'bookCount',
           await models.book.count({
-            where: { books_id: rows[i].books_id }
+            where: { books_id: rows[i].associate_id }
           })
         )
 
@@ -843,7 +850,7 @@ class Books {
         }
       }
 
-      await resClientJson(ctx, {
+      await resClientJson(res, {
         state: 'success',
         message: 'success',
         data: {
@@ -854,7 +861,7 @@ class Books {
         }
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })

@@ -1,9 +1,8 @@
 const Seq = require('sequelize')
 const shortid = require('shortid')
 const time = require('../time')
-
 module.exports = {
-  NAME: 'thumb_dynamic' /* 表名 */,
+  NAME: 'thumb' /* 表名 */,
   TABLE: {
     /* 表结构 */
     id: {
@@ -16,15 +15,27 @@ module.exports = {
     },
     uid: {
       // 用户ID
-      type: Seq.BIGINT(20),
+      type: Seq.INTEGER(10),
       comment: 'uid',
       field: 'uid'
     },
-    dynamic_id: {
-      // 动态的dynamic_id
-      type: Seq.BIGINT(20),
-      comment: '动态的dynamic_id',
-      field: 'dynamic_id'
+    associate_id: {
+      // 关联的内容
+      type: Seq.STRING(50),
+      comment: '关联的内容',
+      field: 'associate_id'
+    },
+    type: {
+      // 类型
+      type: Seq.INTEGER(6),
+      comment: '类型',
+      field: 'type'
+    },
+    is_associate: {
+      // 是否关联
+      type: Seq.BOOLEAN,
+      comment: '是否关联',
+      field: 'is_associate'
     },
     ...time.create_date
   }

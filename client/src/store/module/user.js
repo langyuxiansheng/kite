@@ -5,7 +5,7 @@ const state = () => ({
   userArticleCount: 0,
   userAttentionCount: 0,
   dynamicCount: 0,
-  allLikeDymaicId: [], // 关注的所有动态ID
+  allLikeDynaicId: [], // 关注的所有动态ID
   allRssDynamicTopicId: [], // 订阅的所有动态话题ID
   user_info: {},
   user: {},
@@ -14,7 +14,10 @@ const state = () => ({
     // 侧栏
     user_role_all: []
   },
-  messageCount: 0 // 用户未读
+  messageCount: 0, // 用户未读
+  associateInfo: {
+    articleThumdId: []
+  }
 })
 
 const mutations = {
@@ -24,7 +27,7 @@ const mutations = {
     state.userArticleCount = data.userArticleCount
     state.userAttentionCount = data.userAttentionCount
     state.dynamicCount = data.dynamicCount
-    state.allLikeDymaicId = data.allLikeDymaicId // 关注的所有动态ID
+    state.allLikeDynaicId = data.allLikeDynaicId // 关注的所有动态ID
     state.allRssDynamicTopicId = data.allRssDynamicTopicId // 订阅的所有动态话题ID
     state.user_info = data.user_info
     state.user = data.user
@@ -40,34 +43,14 @@ const mutations = {
   SET_UNREAD_MESSAGE_COUNT (state, data) {
     // 用户消息数量
     state.messageCount = data
+  },
+  SET_ASSOCIATE_INFO (state, data) {
+    // 用户关联信心
+    state.associateInfo = data || {}
   }
 }
 
 const actions = {
-  USER_ATTENTION ({ commit, dispatch, state }, parameter) {
-    // 用户关注用户
-    return fetch({
-      url: '/user/attention',
-      method: 'post',
-      parameter: parameter
-    })
-  },
-  USER_LIKE_ARTICLE ({ commit, dispatch, state }, parameter) {
-    // 用户喜欢文章
-    return fetch({
-      url: '/user/like-article',
-      method: 'post',
-      parameter: parameter
-    })
-  },
-  USER_LIKE_DYNAMIC ({ commit, dispatch, state }, parameter) {
-    // 用户喜欢动态
-    return fetch({
-      url: '/user/like-dynamic',
-      method: 'post',
-      parameter: parameter
-    })
-  },
   GET_USER_INFO_ALL ({ commit, dispatch, state }, parameter) {
     // 获取用户信息
     return fetch({
@@ -206,6 +189,17 @@ const actions = {
       url: '/personal/books-list',
       method: 'get',
       parameter: { params: parameter }
+    })
+  },
+  GET_ASSOCIATE_INFO ({ commit, dispatch, state }, parameter) {
+    // 获取用户关联信息
+    return fetch({
+      url: '/user/associate-info',
+      method: 'get',
+      parameter: { params: parameter }
+    }).then(result => {
+      commit('SET_ASSOCIATE_INFO', result.data)
+      return result
     })
   }
 }

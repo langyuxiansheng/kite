@@ -12,14 +12,14 @@ const { TimeNow, TimeDistance } = require('../../utils/time')
 const {
   statusList: { reviewSuccess, freeReview, pendingReview, reviewFail, deletes },
   articleType,
-  userMessageType,
   userMessageAction,
   virtualType,
   virtualPlusLess,
   virtualAction,
   virtualInfo,
   virtualActionText,
-  virtualTypeText
+  virtualTypeText,
+  modelType
 } = require('../../utils/constant')
 
 const userVirtual = require('../../common/userVirtual')
@@ -36,10 +36,10 @@ class Order {
    * 获取消费列表
    * @param   {object} ctx 上下文对象
    */
-  static async getVirtualList (ctx) {
-    let page = ctx.query.page || 1
-    let pageSize = Number(ctx.query.pageSize) || 10
-    let { user = '' } = ctx.request
+  static async getVirtualList (req, res, next) {
+    let page = req.query.page || 1
+    let pageSize = Number(req.query.pageSize) || 10
+    let { user = '' } = req
     try {
       let { count, rows } = await models.virtual.findAndCountAll({
         where: {
@@ -115,7 +115,7 @@ class Order {
         }
       }
 
-      await resClientJson(ctx, {
+      await resClientJson(res, {
         state: 'success',
         message: '数据返回成功',
         data: {
@@ -126,7 +126,7 @@ class Order {
         }
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })

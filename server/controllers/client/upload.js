@@ -5,7 +5,7 @@ const {
 } = require('../../utils/index')
 const config = require('../../config')
 const moment = require('moment')
-const multer = require('koa-multer')
+const multer = require('nodemailer')
 const upload = require('../../utils/upload') // 上传工具类
 const fs = require('fs')
 const path = require('path')
@@ -23,19 +23,17 @@ class Upload {
    * 用户头像上传修改
    * @param   {object} ctx 上下文对象
    */
-  static async uploadUserAvatar (ctx) {
+  static async uploadUserAvatar (req, res, next) {
     try {
       const website = lowdb
         .read()
         .get('website')
         .value()
-      await upload('avatarImg').single('file')(ctx)
-      if (ctx.req.file) {
-        let destination = ctx.req.file.destination.split('static')[1]
-        let filename = ctx.req.file.filename
-        let origin =
-          ctx.request.header.origin || 'http://' + website.domain_name
-        let { user = '' } = ctx.request
+      if (req.file) {
+        let destination = req.file.destination.split('static')[1]
+        let filename = req.file.filename
+        let origin = req.headers.origin || 'https://' + website.domain_name
+        let { user = '' } = req
 
         let userRoleAll = await models.user_role.findAll({
           where: {
@@ -87,18 +85,18 @@ class Upload {
           )
         }
 
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'success',
           message: message
         })
       } else {
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'error',
           message: '上传用户头像失败，文件格式有误'
         })
       }
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '上传图片大于1m'
       })
@@ -110,19 +108,17 @@ class Upload {
    * 文章图片上传
    * @param   {object} ctx 上下文对象
    */
-  static async uploadArticlePicture (ctx) {
+  static async uploadArticlePicture (req, res, next) {
     try {
       const website = lowdb
         .read()
         .get('website')
         .value()
-      await upload('articleImg').single('file')(ctx)
-      if (ctx.req.file) {
-        let destination = ctx.req.file.destination.split('static')[1]
-        let filename = ctx.req.file.filename
-        let origin =
-          ctx.request.header.origin || 'http://' + website.domain_name
-        resClientJson(ctx, {
+      if (req.file) {
+        let destination = req.file.destination.split('static')[1]
+        let filename = req.file.filename
+        let origin = req.headers.origin || 'https://' + website.domain_name
+        resClientJson(res, {
           state: 'success',
           message: '文章图片上传成功',
           data: {
@@ -130,13 +126,13 @@ class Upload {
           }
         })
       } else {
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'error',
           message: '文章图片上传成功失败，文件格式有误'
         })
       }
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '上传图片大于1m'
       })
@@ -148,14 +144,13 @@ class Upload {
    * 小书图片上传
    * @param   {object} ctx 上下文对象
    */
-  static async uploadBooksPicture (ctx) {
+  static async uploadBooksPicture (req, res, next) {
     try {
-      await upload('booksImg').single('file')(ctx)
-      if (ctx.req.file) {
-        let destination = ctx.req.file.destination.split('static')[1]
-        let filename = ctx.req.file.filename
-        let origin = ctx.request.header.origin
-        resClientJson(ctx, {
+      if (req.file) {
+        let destination = req.file.destination.split('static')[1]
+        let filename = req.file.filename
+        let origin = req.headers.origin
+        resClientJson(res, {
           state: 'success',
           message: '小书图片上传成功',
           data: {
@@ -163,13 +158,13 @@ class Upload {
           }
         })
       } else {
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'error',
           message: '小书图片上传成功失败，文件格式有误'
         })
       }
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '上传图片大于1m'
       })
@@ -181,14 +176,13 @@ class Upload {
    * 小书章节图片上传
    * @param   {object} ctx 上下文对象
    */
-  static async uploadBookPicture (ctx) {
+  static async uploadBookPicture (req, res, next) {
     try {
-      await upload('bookImg').single('file')(ctx)
-      if (ctx.req.file) {
-        let destination = ctx.req.file.destination.split('static')[1]
-        let filename = ctx.req.file.filename
-        let origin = ctx.request.header.origin
-        resClientJson(ctx, {
+      if (req.file) {
+        let destination = req.file.destination.split('static')[1]
+        let filename = req.file.filename
+        let origin = req.headers.origin
+        resClientJson(res, {
           state: 'success',
           message: '小书图片上传成功',
           data: {
@@ -196,13 +190,13 @@ class Upload {
           }
         })
       } else {
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'error',
           message: '小书图片上传成功失败，文件格式有误'
         })
       }
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '上传图片大于1m'
       })
@@ -214,14 +208,13 @@ class Upload {
    * 动态图片上传
    * @param   {object} ctx 上下文对象
    */
-  static async uploadDynamicPicture (ctx) {
+  static async uploadDynamicPicture (req, res, next) {
     try {
-      await upload('dynamic').single('file')(ctx)
-      if (ctx.req.file) {
-        let destination = ctx.req.file.destination.split('static')[1]
-        let filename = ctx.req.file.filename
-        let origin = ctx.request.header.origin
-        resClientJson(ctx, {
+      if (req.file) {
+        let destination = req.file.destination.split('static')[1]
+        let filename = req.file.filename
+        let origin = req.headers.origin
+        resClientJson(res, {
           state: 'success',
           message: '动态图片上传成功',
           data: {
@@ -229,13 +222,13 @@ class Upload {
           }
         })
       } else {
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'error',
           message: '动态图片上传成功失败，文件格式有误'
         })
       }
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '上传图片大于1m'
       })
@@ -244,14 +237,13 @@ class Upload {
   }
 
   // 个人专栏图片上传
-  static async uploadArticleBlogPicture (ctx) {
+  static async uploadArticleBlogPicture (req, res, next) {
     try {
-      await upload('articleBlogImg').single('file')(ctx)
-      if (ctx.req.file) {
-        let destination = ctx.req.file.destination.split('static')[1]
-        let filename = ctx.req.file.filename
-        let origin = ctx.request.header.origin
-        resClientJson(ctx, {
+      if (req.file) {
+        let destination = req.file.destination.split('static')[1]
+        let filename = req.file.filename
+        let origin = req.headers.origin
+        resClientJson(res, {
           state: 'success',
           message: '个人专栏图片上传成功',
           data: {
@@ -259,13 +251,13 @@ class Upload {
           }
         })
       } else {
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'error',
           message: '个人专栏图片上传成功失败，文件格式有误'
         })
       }
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '上传图片大于1m'
       })

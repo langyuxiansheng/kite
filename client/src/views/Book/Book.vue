@@ -128,7 +128,8 @@ import {
   payTypeText,
   isFree,
   isFreeText,
-  productType
+  productType,
+  modelType
 } from '@utils/constant'
 
 export default {
@@ -137,6 +138,7 @@ export default {
   metaInfo () {
     return {
       title: this.books.booksInfo.title || "",
+      titleTemplate: `%s - ${this.website.meta.website_name || ''}`,
       meta: [
         {
           // set meta
@@ -218,8 +220,9 @@ export default {
         this.$message.warning('请先登录，再继续操作');
         return false
       }
-      this.$store.dispatch('books/COLLECT_BOOKS', {
-        books_id,
+      this.$store.dispatch('common/SET_COLLECT', {
+        associate_id: books_id,
+        type: modelType.books
       })
         .then(result => {
           if (result.state === 'success') {
@@ -286,10 +289,14 @@ export default {
       }
     },
     trialRead () {
-      if (this.books.booksInfo.trialReadCount > 0) {
+      if (this.books.booksInfo.isBuy) {
         this.lookChapter()
       } else {
-        this.$message.warning('当前小书无可试读章节');
+        if (this.books.booksInfo.trialReadCount > 0) {
+          this.lookChapter()
+        } else {
+          this.$message.warning('当前小书无可试读章节');
+        }
       }
     },
     lookChapter () {

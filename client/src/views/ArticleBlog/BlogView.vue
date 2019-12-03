@@ -37,7 +37,7 @@
                       <li class="item attention"
                           v-if="~[2,4].indexOf(Number(articleBlog.blogInfo.status))&&personalInfo.islogin&&articleBlog.blogInfo.is_public"
                           @click="setLikeArticleBlog(articleBlog.blogInfo.blog_id)">
-                        <span :class="{'active':isLike(articleBlog.blogInfo).status}">{{isLike(articleBlog.blogInfo).text}}</span>
+                        <span :class="{'active':isCollect(articleBlog.blogInfo).status}">{{isCollect(articleBlog.blogInfo).text}}</span>
                       </li>
                     </ul>
                   </div>
@@ -120,7 +120,9 @@ import blogArticleItem from './component/blogArticleItem'
 import websiteNotice from '@views/Parts/websiteNotice'
 import { share, baidu, google } from '@utils'
 import googleMixin from '@mixins/google'
-
+import {
+  modelType
+} from '@utils/constant'
 export default {
   name: "ArticleBlogView",
   mixins: [googleMixin], //混合谷歌分析  
@@ -157,6 +159,11 @@ export default {
       store.dispatch("articleBlog/GET_ARTICLE_BLOG_ARTICLE_LIST", { blogId: route.params.blogId }),
     ]);
   },
+  data () {
+    return {
+      modelType
+    }
+  },
   methods: {
     setBlogTime (item) { // 设置blog的时间
       if (item.create_date === item.update_date) {
@@ -187,8 +194,9 @@ export default {
       }
     },
     setLikeArticleBlog (blog_id) { // 用户关注blog
-      this.$store.dispatch('articleBlog/LIKE_ARTICLE_BLOG', {
-        blog_id,
+      this.$store.dispatch('common/SET_COLLECT', {
+        associate_id: blog_id,
+        type: modelType.article_blog
       })
         .then(result => {
           if (result.state === 'success') {
@@ -199,7 +207,7 @@ export default {
           }
         })
     },
-    isLike (item) { // 是否like
+    isCollect (item) { // 是否like
       let likeUserIds = []
       item.likeUserIds.map(item => {
         likeUserIds.push(item.uid)
@@ -207,12 +215,12 @@ export default {
       if (~likeUserIds.indexOf(Number(this.personalInfo.user.uid))) {
         return {
           status: true,
-          text: '已关注'
+          text: '已收藏'
         }
       } else {
         return {
           status: false,
-          text: '关注'
+          text: '收藏'
         }
       }
     },

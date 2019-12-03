@@ -9,10 +9,10 @@ const config = require('../../../config')
 const { TimeNow, TimeDistance } = require('../../../utils/time')
 const {
   statusList: { reviewSuccess, freeReview, pendingReview, reviewFail, deletes },
-  userMessageType,
   userMessageAction,
   virtualAction,
-  virtualType
+  virtualType,
+  modelType
 } = require('../../../utils/constant')
 
 const userMessage = require('../../../utils/userMessage')
@@ -26,10 +26,10 @@ function ErrorMessage (message) {
 /* 评论模块 */
 
 class ArticleComment {
-  static async getArticleComment (ctx) {
-    let aid = ctx.query.aid
-    let page = ctx.query.page || 1
-    let pageSize = ctx.query.pageSize || 10
+  static async getArticleComment (req, res, next) {
+    let aid = req.query.aid
+    let page = req.query.page || 1
+    let pageSize = req.query.pageSize || 10
 
     try {
       let { count, rows } = await models.article_comment.findAndCountAll({
@@ -106,7 +106,7 @@ class ArticleComment {
         }
       }
 
-      await resClientJson(ctx, {
+      await resClientJson(res, {
         state: 'success',
         message: '获取评论列表成功',
         data: {
@@ -117,7 +117,7 @@ class ArticleComment {
         }
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -129,9 +129,9 @@ class ArticleComment {
    * 新建评论post提交
    * @param   {object} ctx 上下文对象
    */
-  static async createArticleComment (ctx) {
-    let reqData = ctx.request.body
-    let { user = '' } = ctx.request
+  static async createArticleComment (req, res, next) {
+    let reqData = req.body
+    let { user = '' } = req
 
     try {
       if (!reqData.content) {
@@ -266,7 +266,7 @@ class ArticleComment {
               uid: oneArticle.uid,
               sender_id: user.uid,
               action: userMessageAction.comment, // 动作：评论
-              type: userMessageType.article, // 类型：文章评论
+              type: modelType.article, // 类型：文章评论
               content: JSON.stringify({
                 comment_id: _data.id,
                 aid: reqData.aid
@@ -283,7 +283,7 @@ class ArticleComment {
               uid: reqData.reply_uid,
               sender_id: user.uid,
               action: userMessageAction.reply, // 动作：回复
-              type: userMessageType.article_comment, // 类型：评论回复
+              type: modelType.article_comment, // 类型：评论回复
               content: JSON.stringify({
                 reply_id: reqData.reply_id,
                 comment_id: _data.id,
@@ -292,7 +292,7 @@ class ArticleComment {
             })
           }
 
-          resClientJson(ctx, {
+          resClientJson(res, {
             state: 'success',
             data: _data,
             message:
@@ -300,14 +300,14 @@ class ArticleComment {
           })
         })
         .catch(err => {
-          resClientJson(ctx, {
+          resClientJson(res, {
             state: 'error',
             message: '回复失败:' + err
           })
         })
     } catch (err) {
       console.log('err', err)
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -319,9 +319,9 @@ class ArticleComment {
    * 删除评论post提交
    * @param   {object} ctx 上下文对象
    */
-  static async deleteArticleComment (ctx) {
-    let reqData = ctx.request.body
-    let { user = '' } = ctx.request
+  static async deleteArticleComment (req, res, next) {
+    let reqData = req.body
+    let { user = '' } = req
 
     try {
       let allComment = await models.article_comment
@@ -362,12 +362,12 @@ class ArticleComment {
         { where: { aid: reqData.aid } }
       )
 
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'success',
         message: '删除成功'
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })

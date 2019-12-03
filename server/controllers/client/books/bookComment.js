@@ -10,10 +10,10 @@ const { TimeNow, TimeDistance } = require('../../../utils/time')
 const {
   statusList: { reviewSuccess, freeReview, pendingReview, reviewFail, deletes },
   articleType,
-  userMessageType,
   userMessageAction,
   virtualAction,
-  virtualType
+  virtualType,
+  modelType
 } = require('../../../utils/constant')
 
 const userMessage = require('../../../utils/userMessage')
@@ -27,10 +27,10 @@ function ErrorMessage (message) {
 /* 评论模块 */
 
 class BookComment {
-  static async getBookCommentList (ctx) {
-    let book_id = ctx.query.book_id
-    let page = ctx.query.page || 1
-    let pageSize = ctx.query.pageSize || 10
+  static async getBookCommentList (req, res, next) {
+    let book_id = req.query.book_id
+    let page = req.query.page || 1
+    let pageSize = req.query.pageSize || 10
 
     try {
       let { count, rows } = await models.book_comment.findAndCountAll({
@@ -107,7 +107,7 @@ class BookComment {
         }
       }
 
-      await resClientJson(ctx, {
+      await resClientJson(res, {
         state: 'success',
         message: '获取评论列表成功',
         data: {
@@ -118,7 +118,7 @@ class BookComment {
         }
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -130,9 +130,9 @@ class BookComment {
    * 新建评论post提交
    * @param   {object} ctx 上下文对象
    */
-  static async createBookComment (ctx) {
-    let reqData = ctx.request.body
-    let { user = '' } = ctx.request
+  static async createBookComment (req, res, next) {
+    let reqData = req.body
+    let { user = '' } = req
 
     try {
       if (!reqData.content) {
@@ -256,7 +256,7 @@ class BookComment {
               uid: oneBook.uid,
               sender_id: user.uid,
               action: userMessageAction.comment, // 动作：评论
-              type: userMessageType.book, // 类型：小书章节评论
+              type: modelType.book, // 类型：小书章节评论
               content: JSON.stringify({
                 comment_id: _data.id,
                 book_id: reqData.book_id
@@ -273,7 +273,7 @@ class BookComment {
               uid: reqData.reply_uid,
               sender_id: user.uid,
               action: userMessageAction.reply, // 动作：回复
-              type: userMessageType.book_comment, // 类型：小书章节回复
+              type: modelType.book_comment, // 类型：小书章节回复
               content: JSON.stringify({
                 reply_id: reqData.reply_id,
                 comment_id: _data.id,
@@ -282,7 +282,7 @@ class BookComment {
             })
           }
 
-          resClientJson(ctx, {
+          resClientJson(res, {
             state: 'success',
             data: _data,
             message:
@@ -292,13 +292,13 @@ class BookComment {
           })
         })
         .catch(err => {
-          resClientJson(ctx, {
+          resClientJson(res, {
             state: 'error',
             message: '回复失败:' + err
           })
         })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -310,9 +310,9 @@ class BookComment {
    * 删除评论post提交
    * @param   {object} ctx 上下文对象
    */
-  static async deleteBookComment (ctx) {
-    let reqData = ctx.request.body
-    let { user = '' } = ctx.request
+  static async deleteBookComment (req, res, next) {
+    let reqData = req.body
+    let { user = '' } = req
 
     try {
       let allComment = await models.book_comment
@@ -340,12 +340,12 @@ class BookComment {
         }
       })
 
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'success',
         message: '删除成功'
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })

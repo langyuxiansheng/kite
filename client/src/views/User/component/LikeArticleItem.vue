@@ -18,7 +18,7 @@
           </li>
           <li class="item item-icon like-article">
             <i class="el-icon-star-off"></i>
-            <strong v-text="articleItem.like_count"></strong>
+            <strong v-text="articleItem.thumb_count"></strong>
           </li>
           <li class="item item-icon comment-count">
             <i class="el-icon-chat-dot-round"></i>
@@ -62,6 +62,10 @@
 <script>
 import { Dropdown } from '@components'
 import { mapState } from 'vuex'
+import {
+  modelType
+} from '@utils/constant'
+
 export default {
   name: "TopArticleItem",
   props: {
@@ -92,7 +96,7 @@ export default {
       /*用户like 文章*/
       var that = this;
       this.$store
-        .dispatch("user/USER_LIKE_ARTICLE", { aid: this.articleItem.aid })
+        .dispatch("common/SET_LIKE", { associate_id: this.articleItem.aid, type: modelType.article })
         .then(res => {
           if (res.state === "success") {
             this.$emit('likeArticle')

@@ -7,7 +7,8 @@ const {
   statusList: { reviewSuccess, freeReview, pendingReview, reviewFail, deletes },
   articleType,
   virtualAction,
-  virtualType
+  virtualType,
+  modelType
 } = require('../../../utils/constant')
 
 function ErrorMessage (message) {
@@ -21,12 +22,12 @@ class PersonalCenter {
    * 用户个人中心个人文章列表render
    * @param   {object} ctx 上下文对象
    */
-  static async userMyArticle (ctx) {
-    let uid = ctx.query.uid
-    let blog_id = ctx.query.blog_id || 'all'
-    let type = ctx.query.type || '1'
-    let page = ctx.query.page || 1
-    let pageSize = Number(ctx.query.pageSize) || 10
+  static async userMyArticle (req, res, next) {
+    let uid = req.query.uid
+    let blog_id = req.query.blog_id || 'all'
+    let type = req.query.type || '1'
+    let page = req.query.page || 1
+    let pageSize = Number(req.query.pageSize) || 10
     let whereParams = {
       uid,
       type: {
@@ -89,7 +90,7 @@ class PersonalCenter {
         )
       }
 
-      await resClientJson(ctx, {
+      await resClientJson(res, {
         state: 'success',
         message: 'home',
         data: {
@@ -101,7 +102,7 @@ class PersonalCenter {
         }
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -113,26 +114,28 @@ class PersonalCenter {
    * 用户个人中心用户关注用户render
    * @param   {object} ctx 上下文对象
    */
-  static async getUserAttentionList (ctx) {
-    let uid = ctx.query.uid
-    let page = ctx.query.page || 1
-    let pageSize = Number(ctx.query.pageSize) || 10
-    let any = ctx.query.any || 'me'
+  static async getUserAttentionList (req, res, next) {
+    let uid = req.query.uid
+    let page = req.query.page || 1
+    let pageSize = Number(req.query.pageSize) || 10
+    let any = req.query.any || 'me'
     let whereParmas = {}
     try {
       if (any === 'me') {
         whereParmas = {
           uid: uid,
-          is_attention: true
+          type: modelType.user,
+          is_associate: true
         }
       } else {
         whereParmas = {
-          attention_uid: uid,
-          is_attention: true
+          associate_id: uid,
+          type: modelType.user,
+          is_associate: true
         }
       }
 
-      let { count, rows } = await models.attention_user.findAndCountAll({
+      let { count, rows } = await models.attention.findAndCountAll({
         where: whereParmas, // 为空，获取全部，也可以自己添加条件
         offset: (page - 1) * pageSize, // 开始的数据索引，比如当page=2 时offset=10 ，而pagesize我们定义为10，则现在为索引为10，也就是从第11条开始返回数据条目
         limit: pageSize, // 每页限制返回的数据条数
@@ -143,23 +146,24 @@ class PersonalCenter {
         rows[i].setDataValue(
           'user',
           await models.user.findOne({
-            where: { uid: any === 'me' ? rows[i].attention_uid : rows[i].uid },
+            where: { uid: any === 'me' ? rows[i].associate_id : rows[i].uid },
             attributes: ['uid', 'avatar', 'nickname', 'sex', 'introduction']
           })
         )
 
         rows[i].setDataValue(
           'userAttentionIds',
-          await models.attention_user.findAll({
+          await models.attention.findAll({
             where: {
-              attention_uid: any === 'me' ? rows[i].attention_uid : rows[i].uid,
-              is_attention: true
+              associate_id: any === 'me' ? rows[i].associate_id : rows[i].uid,
+              type: modelType.user,
+              is_associate: true
             }
           })
         )
       }
 
-      await resClientJson(ctx, {
+      await resClientJson(res, {
         state: 'success',
         message: '获取列表成功',
         data: {
@@ -171,7 +175,7 @@ class PersonalCenter {
         }
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -183,16 +187,18 @@ class PersonalCenter {
    * 用户like文章render
    * @param   {object} ctx 上下文对象
    */
-  static async getUserLikeArticleList (ctx) {
-    let uid = ctx.query.uid
-    let page = ctx.query.page || 1
-    let pageSize = Number(ctx.query.pageSize) || 10
+  static async getUserLikeArticleList (req, res, next) {
+    let uid = req.query.uid
+    let page = req.query.page || 1
+    let pageSize = Number(req.query.pageSize) || 10
     try {
-      let allUserLikeArticle = await models.like_article
-        .findAll({ where: { uid, is_like: true } })
+      let allUserLikeArticle = await models.like
+        .findAll({
+          where: { uid, is_associate: true, type: modelType.article }
+        })
         .then(res => {
           return res.map((item, key) => {
-            return item.aid
+            return item.associate_id
           })
         })
 
@@ -231,7 +237,7 @@ class PersonalCenter {
         )
       }
 
-      await resClientJson(ctx, {
+      await resClientJson(res, {
         state: 'success',
         message: 'home',
         data: {
@@ -242,7 +248,7 @@ class PersonalCenter {
         }
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -250,10 +256,10 @@ class PersonalCenter {
     }
   }
 
-  static async getDynamicListMe (ctx) {
-    const { uid } = ctx.query
-    let page = ctx.query.page || 1
-    let pageSize = Number(ctx.query.pageSize) || 10
+  static async getDynamicListMe (req, res, next) {
+    const { uid } = req.query
+    let page = req.query.page || 1
+    let pageSize = Number(req.query.pageSize) || 10
     let whereParams = {} // 查询参数
     let orderParams = [['create_date', 'DESC']] // 排序参数
 
@@ -290,6 +296,17 @@ class PersonalCenter {
         )
 
         rows[i].setDataValue(
+          'thumbCount',
+          await models.thumb.count({
+            where: {
+              associate_id: rows[i].id,
+              is_associate: true,
+              type: modelType.dynamic
+            }
+          })
+        )
+
+        rows[i].setDataValue(
           'user',
           await models.user.findOne({
             where: { uid: rows[i].uid },
@@ -299,17 +316,18 @@ class PersonalCenter {
 
         rows[i].setDataValue(
           'userAttentionIds',
-          await models.attention_user.findAll({
+          await models.attention.findAll({
             where: {
-              attention_uid: rows[i].uid,
-              is_attention: true
+              uid: rows[i].uid || '',
+              type: modelType.user,
+              is_associate: true
             }
           })
         )
       }
 
       if (rows) {
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'success',
           message: '数据返回成功',
           data: {
@@ -320,13 +338,13 @@ class PersonalCenter {
           }
         })
       } else {
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'error',
           message: '数据返回错误，请再次刷新尝试'
         })
       }
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -338,10 +356,10 @@ class PersonalCenter {
    * 用户个人中心个人专栏列表
    * @param   {object} ctx 上下文对象
    */
-  static async userArticleBlogList (ctx) {
-    let uid = ctx.query.uid
-    let page = ctx.query.page || 1
-    let pageSize = Number(ctx.query.pageSize) || 10
+  static async userArticleBlogList (req, res, next) {
+    let uid = req.query.uid
+    let page = req.query.page || 1
+    let pageSize = Number(req.query.pageSize) || 10
     let whereParams = {
       uid
     }
@@ -378,8 +396,12 @@ class PersonalCenter {
 
         rows[i].setDataValue(
           'likeCount',
-          await models.collect_blog.count({
-            where: { blog_id: rows[i].blog_id, is_like: true }
+          await models.collect.count({
+            where: {
+              associate_id: rows[i].blog_id,
+              is_associate: true,
+              type: modelType.article_blog
+            }
           })
         )
 
@@ -402,13 +424,17 @@ class PersonalCenter {
 
         rows[i].setDataValue(
           'likeUserIds',
-          await models.collect_blog.findAll({
-            where: { blog_id: rows[i].blog_id, is_like: true }
+          await models.collect.findAll({
+            where: {
+              associate_id: rows[i].blog_id,
+              is_associate: true,
+              type: modelType.article_blog
+            }
           })
         )
       }
 
-      await resClientJson(ctx, {
+      await resClientJson(res, {
         state: 'success',
         message: '获取用户个人专栏成功列表',
         data: {
@@ -419,7 +445,7 @@ class PersonalCenter {
         }
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -431,10 +457,10 @@ class PersonalCenter {
    * 用户个人中心个人小书列表
    * @param   {object} ctx 上下文对象
    */
-  static async userBooksList (ctx) {
-    let uid = ctx.query.uid
-    let page = ctx.query.page || 1
-    let pageSize = Number(ctx.query.pageSize) || 10
+  static async userBooksList (req, res, next) {
+    let uid = req.query.uid
+    let page = req.query.page || 1
+    let pageSize = Number(req.query.pageSize) || 10
     let whereParams = {
       uid,
       status: {
@@ -490,7 +516,7 @@ class PersonalCenter {
         )
       }
 
-      await resClientJson(ctx, {
+      await resClientJson(res, {
         state: 'success',
         message: '获取用户个人小书列表',
         data: {
@@ -501,7 +527,7 @@ class PersonalCenter {
         }
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })

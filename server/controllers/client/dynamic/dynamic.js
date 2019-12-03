@@ -11,10 +11,10 @@ const { TimeNow, TimeDistance } = require('../../../utils/time')
 const {
   statusList: { reviewSuccess, freeReview, pendingReview, reviewFail, deletes },
   articleType,
-  userMessageType,
   userMessageAction,
   virtualAction,
-  virtualType
+  virtualType,
+  modelType
 } = require('../../../utils/constant')
 
 const userVirtual = require('../../../common/userVirtual')
@@ -25,9 +25,10 @@ function ErrorMessage (message) {
 }
 
 class dynamic {
-  static async createDynamic (ctx) {
-    let reqData = ctx.request.body
-    let { user = '' } = ctx.request
+  static async createDynamic (req, res, next) {
+    let reqData = req.body
+    console.log('reqData', req)
+    let { user = '' } = req
     try {
       if (!reqData.content) {
         throw new ErrorMessage('请输入片刻内容')
@@ -122,12 +123,12 @@ class dynamic {
         action: virtualAction.create
       })
 
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'success',
         message: '动态创建成功'
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -135,8 +136,8 @@ class dynamic {
     }
   }
 
-  static async getDynamicView (ctx) {
-    let id = ctx.query.id || ''
+  static async getDynamicView (req, res, next) {
+    let id = req.query.id || ''
 
     let whereParams = {} // 查询参数
 
@@ -170,11 +171,12 @@ class dynamic {
         )
 
         oneDynamic.setDataValue(
-          'userAttentionIds',
-          await models.attention_user.findAll({
+          'thumbCount',
+          await models.thumb.count({
             where: {
-              attention_uid: oneDynamic.uid,
-              is_attention: true
+              associate_id: oneDynamic.id,
+              type: modelType.dynamic,
+              is_associate: true
             }
           })
         )
@@ -203,7 +205,7 @@ class dynamic {
       }
 
       if (oneDynamic) {
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'success',
           message: '数据返回成功',
           data: {
@@ -211,13 +213,13 @@ class dynamic {
           }
         })
       } else {
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'error',
           message: '数据返回错误，请再次刷新尝试'
         })
       }
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -225,14 +227,14 @@ class dynamic {
     }
   }
 
-  static async getDynamicList (ctx) {
-    let page = ctx.query.page || 1
-    let pageSize = ctx.query.pageSize || 10
-    let topic_id = ctx.query.topic_id || ''
-    let sort = ctx.query.sort || '' // 排序
+  static async getDynamicList (req, res, next) {
+    console.log('req.query', req.query)
+    let page = req.query.page || 1
+    let pageSize = req.query.pageSize || 10
+    let topic_id = req.query.topic_id || ''
+    let sort = req.query.sort || '' // 排序
     let whereDynamicParams = {} // 查询参数
     let orderParams = [] // 排序参数
-    let status = []
     try {
       // sort
       // hottest 全部热门:
@@ -242,7 +244,7 @@ class dynamic {
           [Op.or]: [reviewSuccess, freeReview]
         }
       }
-
+      console.log('sort', sort)
       if (!~['hot', 'newest'].indexOf(sort)) {
         whereDynamicParams['topic_ids'] = topic_id
       } else {
@@ -253,6 +255,8 @@ class dynamic {
             is_push: false
           } // 为空，获取全部，也可以自己添加条件
         })
+
+        console.log('allDynamicTopic', allDynamicTopic)
 
         if (allDynamicTopic && allDynamicTopic.length > 0) {
           for (let item in allDynamicTopic) {
@@ -268,11 +272,13 @@ class dynamic {
       }
 
       sort === 'newest' && orderParams.push(['create_date', 'DESC'])
-      sort === 'hot' && orderParams.push(['like_count', 'DESC'])
+      sort === 'hot' && orderParams.push(['thumb_count', 'DESC'])
       // newest 最新推荐:
       if (!sort || sort === 'new') {
         orderParams.push(['create_date', 'DESC'])
       }
+
+      console.log('whereDynamicParams', whereDynamicParams)
 
       let { count, rows } = await models.dynamic.findAndCountAll({
         where: whereDynamicParams, // 为空，获取全部，也可以自己添加条件
@@ -294,11 +300,12 @@ class dynamic {
         rows[i].setDataValue('topic', topic)
 
         rows[i].setDataValue(
-          'userAttentionIds',
-          await models.attention_user.findAll({
+          'thumbCount',
+          await models.thumb.count({
             where: {
-              attention_uid: rows[i].uid,
-              is_attention: true
+              associate_id: rows[i].id,
+              type: modelType.dynamic,
+              is_associate: true
             }
           })
         )
@@ -327,7 +334,7 @@ class dynamic {
       }
 
       if (rows) {
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'success',
           message: '数据返回成功',
           data: {
@@ -338,13 +345,13 @@ class dynamic {
           }
         })
       } else {
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'error',
           message: '数据返回错误，请再次刷新尝试'
         })
       }
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -352,12 +359,12 @@ class dynamic {
     }
   }
 
-  static async getDynamicListMe (ctx) {
-    let page = ctx.query.page || 1
-    let pageSize = ctx.query.pageSize || 10
+  static async getDynamicListMe (req, res, next) {
+    let page = req.query.page || 1
+    let pageSize = req.query.pageSize || 10
     let whereParams = {} // 查询参数
     let orderParams = [['create_date', 'DESC']] // 排序参数
-    let { user = '' } = ctx.request
+    let { user = '' } = req
 
     try {
       // sort
@@ -391,11 +398,12 @@ class dynamic {
         )
 
         rows[i].setDataValue(
-          'userAttentionIds',
-          await models.attention_user.findAll({
+          'thumbCount',
+          await models.thumb.count({
             where: {
-              attention_uid: rows[i].uid,
-              is_attention: true
+              associate_id: rows[i].id,
+              type: modelType.dynamic,
+              is_associate: true
             }
           })
         )
@@ -424,7 +432,7 @@ class dynamic {
       }
 
       if (rows) {
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'success',
           message: '数据返回成功',
           data: {
@@ -435,13 +443,13 @@ class dynamic {
           }
         })
       } else {
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'error',
           message: '数据返回错误，请再次刷新尝试'
         })
       }
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -450,11 +458,10 @@ class dynamic {
   }
 
   // 推荐动态
-  static async recommendDynamicList (ctx) {
+  static async recommendDynamicList (req, res, next) {
     let whereParams = {} // 查询参数
     let orderParams = [
       ['create_date', 'DESC'],
-      ['like_count', 'DESC'],
       ['comment_count', 'DESC']
     ] // 排序参数
 
@@ -516,7 +523,7 @@ class dynamic {
       }
 
       if (allDynamic) {
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'success',
           message: '数据返回成功',
           data: {
@@ -524,13 +531,13 @@ class dynamic {
           }
         })
       } else {
-        resClientJson(ctx, {
+        resClientJson(res, {
           state: 'error',
           message: '数据返回错误，请再次刷新尝试'
         })
       }
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -538,7 +545,7 @@ class dynamic {
     }
   }
 
-  static async dynamicTopicIndex (ctx) {
+  static async dynamicTopicIndex (req, res, next) {
     // 获取首页侧栏动态列表
     try {
       let allDynamicTopic = await models.dynamic_topic.findAll({
@@ -547,7 +554,7 @@ class dynamic {
           ['sort', 'ASC'] // asc
         ]
       })
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'success',
         message: '返回成功',
         data: {
@@ -555,7 +562,7 @@ class dynamic {
         }
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -563,7 +570,7 @@ class dynamic {
     }
   }
 
-  static async dynamicTopicList (ctx) {
+  static async dynamicTopicList (req, res, next) {
     // 获取所有动态列表
     try {
       let allDynamicTopic = await models.dynamic_topic.findAll({
@@ -580,9 +587,20 @@ class dynamic {
             where: { topic_ids: allDynamicTopic[i].topic_id }
           })
         )
+
+        allDynamicTopic[i].setDataValue(
+          'attention_count',
+          await models.attention.count({
+            where: {
+              associate_id: allDynamicTopic[i].id,
+              is_associate: true,
+              type: modelType.dynamic_topic
+            }
+          })
+        )
       }
 
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'success',
         message: '返回成功',
         data: {
@@ -590,7 +608,49 @@ class dynamic {
         }
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
+        state: 'error',
+        message: '错误信息：' + err.message
+      })
+      return false
+    }
+  }
+
+  static async getDynamicTopicInfo (req, res, next) {
+    const { topic_id } = req.query
+    try {
+      const oneDynamicTopic = await models.dynamic_topic.findOne({
+        where: {
+          topic_id
+        }
+      })
+      oneDynamicTopic.setDataValue(
+        'dynamic_count',
+        await models.dynamic.count({
+          where: { topic_ids: oneDynamicTopic.topic_id }
+        })
+      )
+
+      oneDynamicTopic.setDataValue(
+        'attention_count',
+        await models.attention.count({
+          where: {
+            associate_id: oneDynamicTopic.id,
+            is_associate: true,
+            type: modelType.dynamic_topic
+          }
+        })
+      )
+
+      resClientJson(res, {
+        state: 'success',
+        data: {
+          info: oneDynamicTopic
+        },
+        message: '动态专题详情获取成功'
+      })
+    } catch (err) {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })
@@ -604,9 +664,9 @@ class dynamic {
    * 删除动态判断是否有动态
    * 无关联则直接删除动态，有关联则开启事务同时删除与动态的关联
    */
-  static async deleteDynamic (ctx) {
-    const { id } = ctx.query
-    let { islogin = '', user = '' } = ctx.request
+  static async deleteDynamic (req, res, next) {
+    const { id } = req.query
+    let { islogin = '', user = '' } = req
 
     try {
       let oneDynamic = await models.dynamic.findOne({
@@ -630,12 +690,12 @@ class dynamic {
 
       await models.dynamic.destroy({ where: { id } })
 
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'success',
         message: '删除动态成功'
       })
     } catch (err) {
-      resClientJson(ctx, {
+      resClientJson(res, {
         state: 'error',
         message: '错误信息：' + err.message
       })

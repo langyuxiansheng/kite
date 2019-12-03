@@ -1,17 +1,18 @@
 <template>
   <div class="dynamic-item"
        v-show="isShowDynamic">
-
     <div class="dynamic-header-row">
       <div class="account-group">
         <div class="user-popover-box">
-
           <router-link class="user-link"
-                       :to="{name:'user',params:{uid:dynamicItem.user.uid,routeType:'article'}}"
-                       v-if="dynamicItem.user.uid!=='tree'">
+                       :to="{
+              name: 'user',
+              params: { uid: dynamicItem.user.uid, routeType: 'article' }
+            }"
+                       v-if="dynamicItem.user.uid !== 'tree'">
             <img v-lazy="dynamicItem.user.avatar"
                  class="avatar"
-                 alt="">
+                 alt="" />
           </router-link>
 
           <a href="javascript:;"
@@ -20,37 +21,51 @@
              v-else>
             <img v-lazy="dynamicItem.user.avatar"
                  class="avatar"
-                 alt="">
+                 alt="" />
           </a>
         </div>
         <div class="dynamic-header-content">
           <div class="user-popover-box">
-            <router-link :to="{name:'user',params:{uid:dynamicItem.user.uid,routeType:'article'}}"
+            <router-link :to="{
+                name: 'user',
+                params: { uid: dynamicItem.user.uid, routeType: 'article' }
+              }"
                          class="username"
-                         v-if="dynamicItem.user.uid!=='tree'">{{dynamicItem.user.nickname}}</router-link>
+                         v-if="dynamicItem.user.uid !== 'tree'">{{ dynamicItem.user.nickname }}</router-link>
             <a href="javascript:;"
                target="_blank"
                class="username"
-               v-else> {{dynamicItem.user.nickname}} </a>
+               v-else>
+              {{ dynamicItem.user.nickname }}
+            </a>
           </div>
           <div class="meta-box">
-            <div class="position ellipsis">@ {{dynamicItem.user.introduction}}</div>
+            <div class="position ellipsis">
+              @ {{ dynamicItem.user.introduction }}
+            </div>
             <div class="dot">·</div>
             <a href="javascript:;"
                target="_blank"
                rel=""
                class="time-box">
               <time :title="dynamicItem.create_dt"
-                    class="time">{{dynamicItem.create_dt}}</time>
+                    class="time">{{
+                dynamicItem.create_dt
+              }}</time>
             </a>
           </div>
         </div>
       </div>
       <div class="header-action"
-           v-if="dynamicItem.user.uid!=='tree'&&personalInfo.islogin">
+           v-if="dynamicItem.user.uid !== 'tree' && personalInfo.islogin">
         <button class="subscribe-btn follow-button"
-                :class="[{'active':isAttention(dynamicItem||'')},`user-attention-${dynamicItem.user.uid}`]"
-                @click="setUserAttention">{{isAttention(dynamicItem)?'已关注':'关注'}}</button>
+                :class="[
+            { active: isThumb(dynamicItem || '') },
+            `user-attention-${dynamicItem.user.uid}`
+          ]"
+                @click="setUserAttention">
+          {{ isThumb(dynamicItem) ? '已关注' : '关注' }}
+        </button>
       </div>
     </div>
 
@@ -62,40 +77,45 @@
     </div>
 
     <div class="dynamic-image-row"
-         v-if="dynamicItem.type===dynamicType.img">
+         v-if="dynamicItem.type === dynamicType.img">
       <img style="width: 100px; height: 100px"
            class="preview-picture"
            v-lazy="url"
-           v-for="(url,key) in imgAnalyze(dynamicItem.attach)"
+           v-for="(url, key) in imgAnalyze(dynamicItem.attach)"
            :key="key"
            v-if="url"
-           alt="">
+           alt="" />
     </div>
 
     <div class="dynamic-link-row"
-         v-if="dynamicItem.type===dynamicType.link">
+         v-if="dynamicItem.type === dynamicType.link">
       <a :href="dynamicItem.attach"
-         target="_block">{{dynamicItem.attach}}</a>
+         target="_block">{{ dynamicItem.attach }}</a>
     </div>
 
     <div class="dynamic-topic-row"
          v-if="dynamicItem.topic">
-      <router-link :to='{name:"dynamicTopicView",params:{dynamicTopicId:dynamicItem.topic.topic_id}}'
-                   class="topic-title">{{dynamicItem.topic.name}}</router-link>
+      <router-link :to="{
+          name: 'dynamicTopicView',
+          params: { dynamicTopicId: dynamicItem.topic.topic_id }
+        }"
+                   class="topic-title">{{ dynamicItem.topic.name }}</router-link>
     </div>
 
     <div class="dynamic-action-row">
       <div class="action-box">
         <div class="like-action action"
-             :class="{'active':~user.allLikeDymaicId.indexOf(dynamicItem.id||'')}"
+             :class="{
+            active: ~user.allLikeDynaicId.indexOf(dynamicItem.id || '')
+          }"
              @click="setUserLikeDynamic">
           <i class="el-icon-star-off"></i>
-          <span class="action-title">{{dynamicItem.like_count}}</span>
+          <span class="action-title">{{ dynamicItem.thumb_count }}</span>
         </div>
         <div class="comment-action action"
-             @click="isCommnet=!isCommnet">
+             @click="isCommnet = !isCommnet">
           <i class="el-icon-chat-line-round"></i>
-          <span class="action-title">{{dynamicItem.comment_count}}</span>
+          <span class="action-title">{{ dynamicItem.comment_count }}</span>
         </div>
         <div class="share-action action">
           <Dropdown>
@@ -105,15 +125,15 @@
             </div>
             <div class="dropdown-menu-view">
               <div class="dropdown-menu-item"
-                   @click="shareChange({type:'qq',data:dynamicItem})">
+                   @click="shareChange({ type: 'qq', data: dynamicItem })">
                 分享到QQ
               </div>
               <div class="dropdown-menu-item"
-                   @click="shareChange({type:'sina',data:dynamicItem})">
+                   @click="shareChange({ type: 'sina', data: dynamicItem })">
                 分享到新浪
               </div>
               <div class="dropdown-menu-item"
-                   @click="shareChange({type:'qzone',data:dynamicItem})">
+                   @click="shareChange({ type: 'qzone', data: dynamicItem })">
                 分享到QQ空间
               </div>
             </div>
@@ -128,35 +148,30 @@
     </div>
 
     <div class="dynamic-comment-row"
-         v-if="isCommnet&&dfIsCommnet">
+         v-if="isCommnet && dfIsCommnet">
       <dynamic-comment @dynamicCommentChange="dynamicCommentChange"
                        :dynamicId="dynamicItem.id" />
     </div>
-
   </div>
-
 </template>
 
 <script>
-
 import DynamicComment from '../../Comment/DynamicComment'
 import { faceQQ, Dropdown } from '@components'
 import { mapState } from 'vuex'
 import { share } from '../../../utils'
-import {
-  dynamicType,
-  dynamicTypeText
-} from '@utils/constant'
+import { dynamicType, modelType, dynamicTypeText } from '@utils/constant'
 
 export default {
-  name: "dynamicItem",
+  name: 'dynamicItem',
   props: {
     dynamicItem: {
       default: () => {
         return {}
       }
     },
-    dfIsCommnet: { // 判断默认是否展开评论
+    dfIsCommnet: {
+      // 判断默认是否展开评论
       default: true
     }
   },
@@ -165,31 +180,41 @@ export default {
       isCommnet: false,
       isShowDynamic: true, // 是否显示动态
       dynamicType,
+      modelType,
       dynamicTypeText
     }
   },
   methods: {
-    setUserAttention () { // 设置用户关注用户
+    setUserAttention () {
+      // 设置用户关注用户
       if (!this.personalInfo.islogin) {
         this.$message.warning('请先登录')
         return false
       }
-      this.$store.dispatch('user/USER_ATTENTION', {
-        attention_uid: this.dynamicItem.user.uid
-      }).then(result => {
-        if (result.state === 'success') {
-          this.$message.success(result.message)
-          this.$store.dispatch('user/GET_USER_INFO_ALL', { uid: this.personalInfo.user.uid })
-          this.selectAttentionUserClass(result.data.type)
-        } else {
-          this.$message.error(result.message)
-        }
-      })
+      this.$store
+        .dispatch('common/SET_ATTENTION', {
+          associate_id: this.dynamicItem.user.uid,
+          type: modelType.user
+        })
+        .then(result => {
+          if (result.state === 'success') {
+            this.$message.success(result.message)
+            this.$store.dispatch('user/GET_USER_INFO_ALL', {
+              uid: this.personalInfo.user.uid
+            })
+            this.$store.dispatch('user/GET_ASSOCIATE_INFO')
+            this.selectAttentionUserClass(result.data.type)
+          } else {
+            this.$message.error(result.message)
+          }
+        })
     },
     selectAttentionUserClass (type) {
-      let userAttentionAll = document.querySelectorAll(`.user-attention-${this.dynamicItem.user.uid}`)
+      let userAttentionAll = document.querySelectorAll(
+        `.user-attention-${this.dynamicItem.user.uid}`
+      )
       for (let i = 0; i < userAttentionAll.length; i++) {
-        if (type === 'attention') {
+        if (type === 'enter') {
           userAttentionAll[i].classList.add('active')
           userAttentionAll[i].innerHTML = '已关注'
         } else {
@@ -198,13 +223,9 @@ export default {
         }
       }
     },
-    isAttention (item) { // 是否收藏
-      let userAttentionIds = []
-      if (item.userAttentionIds && item.userAttentionIds.length > 0) {
-        item.userAttentionIds.map(item => {
-          userAttentionIds.push(Number(item.uid))
-        })
-        if (~userAttentionIds.indexOf(Number(this.personalInfo.user.uid))) {
+    isThumb (item) { // 是否收藏
+      if (this.personalInfo.islogin) {
+        if (this.user.associateInfo.dynamicThumdId && ~this.user.associateInfo.dynamicThumdId.indexOf(item.id)) {
           return true
         } else {
           return false
@@ -213,41 +234,51 @@ export default {
         return false
       }
     },
-    isShowDeleteBtn () { // 是否显示删除按钮
-      return this.personalInfo.islogin && this.personalInfo.user.uid === this.dynamicItem.user.uid && this.$route.name !== 'dynamicView'
+    isShowDeleteBtn () {
+      // 是否显示删除按钮
+      return (
+        this.personalInfo.islogin &&
+        this.personalInfo.user.uid === this.dynamicItem.user.uid &&
+        this.$route.name !== 'dynamicView'
+      )
     },
-    deleteDynamic () { // 删除动态
-      this.$confirm("此操作将永久删除此条片刻?", "提示", {
-        confirmButtonText: "确定",
-        cancelButtonText: "取消",
-        type: "warning"
+    deleteDynamic () {
+      // 删除动态
+      this.$confirm('此操作将永久删除此条片刻?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
       })
         .then(() => {
-          this.$store.dispatch('dynamic/DELETE_DYNAMIC', {
-            id: this.dynamicItem.id
-          }).then(result => {
-            if (result.state === 'success') {
-              this.$message.success(result.message)
-              this.isShowDynamic = false
-            } else {
-              this.$message.error(result.message)
-            }
-          })
+          this.$store
+            .dispatch('dynamic/DELETE_DYNAMIC', {
+              id: this.dynamicItem.id
+            })
+            .then(result => {
+              if (result.state === 'success') {
+                this.$message.success(result.message)
+                this.isShowDynamic = false
+              } else {
+                this.$message.error(result.message)
+              }
+            })
         })
-        .catch(() => { });
+        .catch(() => { })
     },
-    dynamicCommentChange () { // 动态一级子评论提交成功
-      this.dynamicItem.comment_count = Number(this.dynamicItem.comment_count) + 1
+    dynamicCommentChange () {
+      // 动态一级子评论提交成功
+      this.dynamicItem.comment_count =
+        Number(this.dynamicItem.comment_count) + 1
     },
     contentRender (val) {
-      let content = val;
+      let content = val
       faceQQ.map(faceItem => {
         content = content.replace(
-          new RegExp("\\" + faceItem.face_text, "g"),
+          new RegExp('\\' + faceItem.face_text, 'g'),
           faceItem.face_view
-        );
-      });
-      return content;
+        )
+      })
+      return content
     },
     setUserLikeDynamic () {
       if (!this.personalInfo.islogin) {
@@ -256,38 +287,58 @@ export default {
       }
       /*用户like 动态*/
       this.$store
-        .dispatch("user/USER_LIKE_DYNAMIC", {
-          dynamic_id: this.dynamicItem.id
+        .dispatch('common/SET_THUMB', {
+          associate_id: this.dynamicItem.id,
+          type: modelType.dynamic
         })
         .then(res => {
-          if (res.state === "success") {
-            if (res.data.type === "like") {
-              this.dynamicItem.like_count = Number(this.dynamicItem.like_count) + 1
-            } else if (res.data.type === "cancel") {
-              this.dynamicItem.like_count -= 1
+          if (res.state === 'success') {
+            if (res.data.type === 'enter') {
+              this.dynamicItem.thumb_count =
+                Number(this.dynamicItem.thumb_count) + 1
+            } else if (res.data.type === 'cancel') {
+              this.dynamicItem.thumb_count -= 1
             }
-            this.$store.dispatch('user/GET_USER_INFO_ALL', { uid: this.personalInfo.user.uid })
+            this.$store.dispatch('user/GET_USER_INFO_ALL', {
+              uid: this.personalInfo.user.uid
+            })
           } else {
-            this.$message.warning(res.message);
+            this.$message.warning(res.message)
           }
         })
         .catch(function (err) {
-          console.log(err);
-        });
+          console.log(err)
+        })
     },
     imgAnalyze (attach) {
       let urlArr = attach.split(',') || []
       let length = attach.split(',').length
       return length > 0 ? urlArr : []
     },
-    shareChange (val) { // 分享到其他
+    shareChange (val) {
+      // 分享到其他
       let urlOrigin = window.location.origin // 源地址
-      if (val.type === 'sina') { // 新浪
-        share.shareToXl(val.data.content, urlOrigin + '/dynamic/' + val.data.id, this.website.meta.logo)
-      } else if (val.type === 'qzone') { // qq空间
-        share.shareToQq(val.data.content, urlOrigin + '/dynamic/' + val.data.id, this.website.meta.logo)
-      } else if (val.type === 'qq') { // qq空间
-        share.shareQQ(val.data.content, urlOrigin + '/dynamic/' + val.data.id, this.website.meta.logo)
+      if (val.type === 'sina') {
+        // 新浪
+        share.shareToXl(
+          val.data.content,
+          urlOrigin + '/dynamic/' + val.data.id,
+          this.website.meta.logo
+        )
+      } else if (val.type === 'qzone') {
+        // qq空间
+        share.shareToQq(
+          val.data.content,
+          urlOrigin + '/dynamic/' + val.data.id,
+          this.website.meta.logo
+        )
+      } else if (val.type === 'qq') {
+        // qq空间
+        share.shareQQ(
+          val.data.content,
+          urlOrigin + '/dynamic/' + val.data.id,
+          this.website.meta.logo
+        )
       }
     }
   },
